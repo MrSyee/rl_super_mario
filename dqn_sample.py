@@ -13,17 +13,20 @@ import gym
 # import gym_pull
 import ppaquette_gym_super_mario
 
+from wrappers import MarioActionSpaceWrapper
+from wrappers import ProcessFrame84
+
 EPISODES = 1000000
 
 # SuperMario DQN Agent
 class DQNAgent:
-    def __init__(self, action_size):
+    def __init__(self, n_action):
         self.render = False
         self.load_model = False
         # 상태와 행동의 크기 정의
         self.state_size = (84, 84, 4) # 84, 84 화면이 4장
         # 마리오는 224, 256 -> resize 할것
-        self.action_size = action_size
+        self.n_action = n_action
         # DQN 하이퍼파라미터
         self.epsilon = 1.
         self.epsilon_start, self.epsilon_end = 1.0, 0.1
@@ -67,7 +70,7 @@ class DQNAgent:
             model.add(Conv2D(64, (3, 3), strides=(1, 1), activation='relu'))  # 9x9 -> 7x7
             model.add(Flatten())
             model.add(Dense(512, activation='relu')) # 7x7x64= 3136 -> 512
-            model.add(Dense(self.action_size))       # 512 -> action_size
+            model.add(Dense(self.n_action))       # 512 -> n_action
             model.summary()
             return model
 
@@ -78,7 +81,7 @@ class DQNAgent:
 
             prediction = self.model.output
 
-            a_one_hot = K.one_hot(a, self.action_size)
+            a_one_hot = K.one_hot(a, self.n_action)
             q_value = K.sum(prediction * a_one_hot, axis=1)
             error = K.abs(y - q_value)
 
@@ -95,7 +98,7 @@ class DQNAgent:
         def get_action(self, history):
             history = np.float32(history / 255.0)
             if np.random.rand() <= self.epsilon:
-                return random.randrange(self.action_size)
+                return random.randrange(self.n_action)
             else:
                 q_value = self.model.predict(history)
                 return np.argmax(q_value[0])
@@ -121,7 +124,12 @@ def process(img):
 if __name__ == "__main__":
     # 환경과 DQN 에이전트 생성
     env = gym.make("ppaquette/SuperMarioBros-1-1-v0")
-    agent = DQNAgent(action_size=6) # [up, left, down, right, A, B]
+    # Apply action space wrapper
+    env = MarioActionSpaceWrapper(env)
+    # Apply observation space wrapper to reduce input size
+    env = ProcessFrame84(env)
+
+    agent = DQNAgent(n_action=4)
 
     scores, episodes, global_step = [], [], 0
 
@@ -135,8 +143,8 @@ if __name__ == "__main__":
         for _ in range(random.randint(1, agent.no_op_steps)): # 1 ~ np_op_steps(30) 까지의 수중 하나를 고른다. 그 후 그 수만큼 for문 돌림.
             observe, _, _, _ = env.step(1)
 
-        state = pre_processing(observe)
-        history = np.stack((state, state, state, state), axis=2)
+        # state = pre_processing(observe)
+        history = np.stack((observe, observe, observe, observe), axis=2) # 맨처음엔 같은 화면 4개를 history로
         history = np.reshape([history], (1, 84, 84, 4))
 
         while not done:
@@ -144,16 +152,33 @@ if __name__ == "__main__":
                 env.render()
             global_step += 1
             step += 1
-
+            '''
+                0: [0, 0, 0, 0, 0, 0],  # NOOP
+                1: [1, 0, 0, 0, 0, 0],  # Up
+                2: [0, 0, 1, 0, 0, 0],  # Down
+                3: [0, 1, 0, 0, 0, 0],  # Left
+                4: [0, 1, 0, 0, 1, 0],  # Left + A
+                5: [0, 1, 0, 0, 0, 1],  # Left + B
+                6: [0, 1, 0, 0, 1, 1],  # Left + A + B
+                7: [0, 0, 0, 1, 0, 0],  # Right
+                8: [0, 0, 0, 1, 1, 0],  # Right + A
+                9: [0, 0, 0, 1, 0, 1],  # Right + B
+                10: [0, 0, 0, 1, 1, 1],  # Right + A + B
+                11: [0, 0, 0, 0, 1, 0],  # A
+                12: [0, 0, 0, 0, 0, 1],  # B
+                13: [0, 0, 0, 0, 1, 1],  # A + B
+            '''
             # 바로 전 4개의 상태로 행동을 선택
             action = agent.get_action(history)
-            # 1: 정지, 2: 왼쪽, 3: 오른쪽
+            #
             if action == 0:
-                real_action = 1
+                real_action = [0, 0, 0, 1, 1, 1],  # Right + A + B
             elif action == 1:
-                real_action = 2
+                real_action = [0, 0, 0, 1, 0, 1],  # Right + B
+            elif action == 1:
+                real_action = [0, 0, 0, 1, 1, 0],  # Right + A
             else:
-                real_action = 3
+                real_action = [0, 0, 0, 1, 0, 0],  # Right
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             observe, reward, done, info = env.step(real_action)
