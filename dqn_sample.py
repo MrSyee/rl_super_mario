@@ -172,13 +172,13 @@ if __name__ == "__main__":
             action = agent.get_action(history)
             #
             if action == 0:
-                real_action = [0, 0, 0, 1, 1, 1],  # Right + A + B
+                real_action = 10,  # Right + A + B
             elif action == 1:
-                real_action = [0, 0, 0, 1, 0, 1],  # Right + B
-            elif action == 1:
-                real_action = [0, 0, 0, 1, 1, 0],  # Right + A
+                real_action = 9,  # Right + B
+            elif action == 2:
+                real_action = 8,  # Right + A
             else:
-                real_action = [0, 0, 0, 1, 0, 0],  # Right
+                real_action = 7,  # Right
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             observe, reward, done, info = env.step(real_action)
