@@ -62,11 +62,7 @@ class MarioActionSpaceWrapper(gym.ActionWrapper):
         return self.mapping[k]
     return 0
 
-
 class SetPlayingModeWrapper(gym.Wrapper):
-    """
-        Doom wrapper to change playing mode 'human' or 'algo'
-    """
     def __init__(self, env):
         super(SetPlayingModeWrapper, self).__init__(env)
         if target_mode not in ['algo', 'human']:
