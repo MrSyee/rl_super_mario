@@ -23,8 +23,8 @@ class ProcessFrame84(gym.ObservationWrapper):
     x_t = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     x_t = cv2.resize(x_t, (84, 84), interpolation=cv2.INTER_AREA)
     x_t = np.reshape(x_t, (84, 84, 1))
-    x_t = np.nan_to_num(x_t)
-    return x_t.astype(np.uint8)
+    x_t = np.nan_to_num(x_t) # Replace nan with zero and inf with finite numbers.
+    return (np.float32(x_t.astype(np.uint8) / 255.)
 
 
 class MarioActionSpaceWrapper(gym.ActionWrapper):
@@ -61,3 +61,14 @@ class MarioActionSpaceWrapper(gym.ActionWrapper):
       if(self.mapping[k] == action):
         return self.mapping[k]
     return 0
+
+
+class SetPlayingModeWrapper(gym.Wrapper):
+    """
+        Doom wrapper to change playing mode 'human' or 'algo'
+    """
+    def __init__(self, env):
+        super(SetPlayingModeWrapper, self).__init__(env)
+        if target_mode not in ['algo', 'human']:
+            raise gym.error.Error('Error - The mode "{}" is not supported. Supported options are "algo" or "human"'.format(target_mode))
+        self.unwrapped.mode = target_mode
