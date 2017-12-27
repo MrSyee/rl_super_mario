@@ -10,29 +10,29 @@ from gym import spaces
 
 # 학습속도를 높이기 위해 gray_scale로 전처리 + size도 줄인다.
 class ProcessFrame84(gym.ObservationWrapper):
-  def __init__(self, env=None):
-    super(ProcessFrame84, self).__init__(env)
-    self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 1))
+    def __init__(self, env=None):
+        super(ProcessFrame84, self).__init__(env)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 1))
 
-  def _observation(self, obs):
-    return ProcessFrame84.process(obs)
+    def _observation(self, obs):
+        return ProcessFrame84.process(obs)
 
-  @staticmethod
-  def process(img):
-    # img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
-    x_t = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    x_t = cv2.resize(x_t, (84, 84), interpolation=cv2.INTER_AREA)
-    x_t = np.reshape(x_t, (84, 84, 1))
-    x_t = np.nan_to_num(x_t) # Replace nan with zero and inf with finite numbers.
-    return (np.float32(x_t.astype(np.uint8) / 255.)
+    @staticmethod
+    def process(img):
+        # img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
+        x_t = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        x_t = cv2.resize(x_t, (84, 84), interpolation=cv2.INTER_AREA)
+        x_t = np.reshape(x_t, (84, 84, 1))
+        x_t = np.nan_to_num(x_t) # Replace nan with zero and inf with finite numbers.
+        return (np.float32(x_t.astype(np.uint8) / 255.))
 
 
-class MarioActionSpaceWrapper(gym.ActionWrapper):
-  """
+class MarioActionSpaceWrapper(gym.Wrapper):
+    """
       Wrapper to convert MultiDiscrete action space to Discrete
       Only supports one config, which maps to the most logical discrete space possible
-  """
-  mapping = {
+    """
+    mapping = {
     0: [0, 0, 0, 0, 0, 0],  # NOOP
     1: [1, 0, 0, 0, 0, 0],  # Up
     2: [0, 0, 1, 0, 0, 0],  # Down
@@ -47,20 +47,20 @@ class MarioActionSpaceWrapper(gym.ActionWrapper):
     11: [0, 0, 0, 0, 1, 0],  # A
     12: [0, 0, 0, 0, 0, 1],  # B
     13: [0, 0, 0, 0, 1, 1],  # A + B
-  }
+    }
 
-  def __init__(self, env):
-    super(MarioActionSpaceWrapper, self).__init__(env)
-    self.action_space = spaces.Discrete(14)
+    def __init__(self, env):
+        super(MarioActionSpaceWrapper, self).__init__(env)
+        self.action_space = spaces.Discrete(14)
 
-  def _action(self, action):
-    return self.mapping.get(action)
+    def _action(self, action):
+        return self.mapping.get(action)
 
-  def _reverse_action(self, action):
-    for k in self.mapping.keys():
-      if(self.mapping[k] == action):
-        return self.mapping[k]
-    return 0
+    def _reverse_action(self, action):
+        for k in self.mapping.keys():
+          if(self.mapping[k] == action):
+            return self.mapping[k]
+        return 0
 
 class SetPlayingModeWrapper(gym.Wrapper):
     def __init__(self, env):

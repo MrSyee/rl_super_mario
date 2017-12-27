@@ -10,6 +10,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import os
+import h5py
 import gym
 # import gym_pull
 import ppaquette_gym_super_mario
@@ -224,19 +225,19 @@ if __name__ == "__main__":
             action = agent.get_action(history)
             #
             if action == 0:
-                real_action = [0, 0, 0, 1, 1, 1],  # Right + A + B
+                real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
             elif action == 1:
-                real_action = [0, 0, 0, 1, 0, 1],  # Right + B
+                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
             elif action == 2:
-                real_action = [0, 0, 0, 1, 1, 0],  # Right + A
+                real_action = [0, 0, 0, 1, 1, 0]  # Right + A
             else:
-                real_action = [0, 0, 0, 1, 0, 0],  # Right
+                real_action = [0, 0, 0, 1, 0, 0]  # Right
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
             # 각 타임스텝마다 상태 전처리
             # next_state = pre_processing(next_observe)
-            next_state = np.reshape([next_state], (1, 84, 84, 1))
+            next_state = np.reshape([next_observe], (1, 84, 84, 1))
             next_history = np.append(next_state, history[:, :, :, :3], axis=3)
 
             agent.avg_q_max += np.amax(
@@ -245,7 +246,8 @@ if __name__ == "__main__":
             reward = np.clip(reward, -1., 1.) # reward를 -1 ~ 1 사이의 값으로 만듬
             # 샘플 <s, a, r, s'>을 리플레이 메모리에 저장 후 학습
             agent.append_sample(history, action, reward, next_history, dead)
-            print ("global_step : " , global_step)
+            print ("global_step : " ,
+            global_step)
 
             if len(agent.memory) >= agent.train_start:
                 agent.train_model()
