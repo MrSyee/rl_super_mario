@@ -289,4 +289,4 @@ if __name__ == "__main__":
 
         # 1000 에피소드마다 모델 저장
         if e % 1000 == 0:
-            agent.model.save_weights("./save_model/supermario_dqn.h5")
+            agent.model.save_weights("./save_model/supermario_dqn2.h5")
