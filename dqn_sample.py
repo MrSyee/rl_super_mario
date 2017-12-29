@@ -34,7 +34,7 @@ class DQNAgent:
         self.epsilon = 1.
         self.epsilon_start, self.epsilon_end = 1.0, 0.1
         self.exploration_steps = 1000
-        . # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
+        # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
                                   / self.exploration_steps
         self.batch_size = 256
