@@ -133,24 +133,30 @@ if __name__ == "__main__":
             #
             if action == 0:
                 real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
+                action_name = "Right + A + B"
             elif action == 1:
                 real_action = [0, 0, 0, 0, 1, 0]  # A
+                action_name = "A"
             elif action == 2:
                 real_action = [0, 0, 0, 1, 1, 0]  # Right + A
+                action_name = "Right + A"
             elif action == 3:
                 real_action = [0, 0, 0, 1, 0, 0]  # Right
+                action_name = "Right"
             else:
                 real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+                action_name = "Right + B"
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
             # 각 타임스텝마다 상태 전처리
             # next_state = pre_processing(next_observe)
-            next_state = np.reshape([next_state], (1, 84, 84, 1))
+            next_state = np.reshape([next_observe], (1, 84, 84, 1))
             next_history = np.append(next_state, history[:, :, :, :3], axis=3)
 
             score += reward
             history = next_history
+            print ("step : ", step, " score : ", score, " action : ", action_name)
 
             if done:
                 print("episode:", e, "  score:", score)
