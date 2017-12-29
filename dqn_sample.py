@@ -23,7 +23,7 @@ if not os.path.isdir('./save_model/'):
 
 # SuperMario DQN Agent
 class DQNAgent:
-    def __init__(self, n_action=4):
+    def __init__(self, n_action=5):
         self.render = False
         self.load_model = False
         # 상태와 행동의 크기 정의
@@ -33,16 +33,17 @@ class DQNAgent:
         # DQN 하이퍼파라미터
         self.epsilon = 1.
         self.epsilon_start, self.epsilon_end = 1.0, 0.1
-        self.exploration_steps = 1000000. # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
+        self.exploration_steps = 1000
+        . # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
                                   / self.exploration_steps
         self.batch_size = 256
         self.train_start = 5000
         self.update_target_rate = 1000
         self.discount_factor = 0.99
-        self.epoch = 100
+        self.epoch = 3000
         # 리플레이 메모리, 최대 크기 400000
-        self.memory = deque(maxlen=5000)
+        self.memory = deque(maxlen=10000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
         self.model = self.build_model()
         self.target_model = self.build_model()
@@ -62,7 +63,10 @@ class DQNAgent:
         self.sess.run(tf.global_variables_initializer())
 
         if self.load_model:
-            self.model.load_weights("./save_model/supermario_dqn.h5")
+            self.model.load_weights("./save_model/supermario_dqn2.h5")
+
+        # supermario_dqn.h5 : action_size = 4
+        # supermario_dqn2.h5 : action_size = 5 more jump, and when exploring do jump
 
         # 상태가 입력, 큐함수가 출력인 인공신경망 생성
     def build_model(self):
@@ -88,7 +92,7 @@ class DQNAgent:
     # select action
     def get_action(self, history):
         if np.random.rand() <= self.epsilon:
-            return random.randrange(self.n_action)
+            return random.randrange(self.n_action-3) # 탐험시 점프가 포함된 명령만 하도록 한다.
         else:
             q_value = self.model.predict(history)
             return np.argmax(q_value[0])
@@ -181,7 +185,8 @@ if __name__ == "__main__":
     # Apply observation space wrapper to reduce input size
     env = ProcessFrame84(env)
 
-    agent = DQNAgent(n_action=4)
+    n_action = 5
+    agent = DQNAgent(n_action=n_action)
 
     scores, episodes, global_step = [], [], 0
 
@@ -227,11 +232,14 @@ if __name__ == "__main__":
             if action == 0:
                 real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
             elif action == 1:
-                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+                real_action = [0, 0, 0, 0, 1, 0]  # A
             elif action == 2:
                 real_action = [0, 0, 0, 1, 1, 0]  # Right + A
-            else:
+            elif action == 3:
                 real_action = [0, 0, 0, 1, 0, 0]  # Right
+            else:
+                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
