@@ -18,51 +18,25 @@ from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
 EPISODES = 1000000
+savefile_name = "supermario_dqn2.h5"
 
 if not os.path.isdir('./save_model/'):
     os.mkdir("./save_model/")
 
 # SuperMario DQN Agent
 class DQNAgent:
-    def __init__(self, n_action=4):
+    def __init__(self, n_action=5):
         self.render = False
-        self.load_model = False
+        self.load_model = True
         # 상태와 행동의 크기 정의
         self.state_size = (84, 84, 4) # 84, 84 화면이 4장
         # 마리오는 224, 256 -> resize 할것
         self.n_action = n_action
-        # DQN 하이퍼파라미터
-        self.epsilon = 1.
-        self.epsilon_start, self.epsilon_end = 1.0, 0.1
-        self.exploration_steps = 1000000. # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
-        self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
-                                  / self.exploration_steps
-        self.batch_size = 32
-        self.train_start = 5000
-        self.update_target_rate = 1000
-        self.discount_factor = 0.99
-        # 리플레이 메모리, 최대 크기 400000
-        self.memory = deque(maxlen=5000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
         self.model = self.build_model()
-        self.target_model = self.build_model()
-        self.update_target_model()
-
-        self.optimizer = self.optimizer()
-
-        # 텐서보드 설정
-        self.sess = tf.InteractiveSession()
-        K.set_session(self.sess)
-
-        self.avg_q_max, self.avg_loss = 0, 0
-        self.summary_placeholders, self.update_ops, self.summary_op = \
-            self.setup_summary()
-        self.summary_writer = tf.summary.FileWriter(
-            'summary/breakout_dqn', self.sess.graph)
-        self.sess.run(tf.global_variables_initializer())
 
         if self.load_model:
-            self.model.load_weights("./save_model/supermario_dqn.h5")
+            self.model.load_weights("./save_model/", savefile_name)
 
         # 상태가 입력, 큐함수가 출력인 인공신경망 생성
         def build_model(self):
@@ -83,11 +57,8 @@ class DQNAgent:
 
         # select action
         def get_action(self, history):
-            if np.random.rand() <= self.epsilon:
-                return random.randrange(self.n_action)
-            else:
-                q_value = self.model.predict(history)
-                return np.argmax(q_value[0])
+            q_value = self.model.predict(history)
+            return np.argmax(q_value[0])
 
         # 각 에피소드 당 학습 정보를 기록
         def setup_summary(self):
@@ -118,8 +89,8 @@ if __name__ == "__main__":
     # Apply observation space wrapper to reduce input size
     env = ProcessFrame84(env)
 
-    agent = DQNAgent(n_action=4)
-    agent.load_model("./save_model/supermario_dqn.h5")
+    agent = DQNAgent(n_action=5)
+    agent.load_model("./save_model/",savefile_name)
 
     scores, episodes, global_step = [], [], 0
 
@@ -165,11 +136,13 @@ if __name__ == "__main__":
             if action == 0:
                 real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
             elif action == 1:
-                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+                real_action = [0, 0, 0, 0, 1, 0]  # A
             elif action == 2:
                 real_action = [0, 0, 0, 1, 1, 0]  # Right + A
-            else:
+            elif action == 3:
                 real_action = [0, 0, 0, 1, 0, 0]  # Right
+            else:
+                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)

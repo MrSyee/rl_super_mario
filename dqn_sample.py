@@ -16,7 +16,8 @@ import ppaquette_gym_super_mario
 from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
-EPISODES = 1000000
+EPISODES = 1000
+savefile_name = "supermario_dqn2.h5"
 
 if not os.path.isdir('./save_model/'):
     os.mkdir("./save_model/")
@@ -25,14 +26,14 @@ if not os.path.isdir('./save_model/'):
 class DQNAgent:
     def __init__(self, n_action=5):
         self.render = False
-        self.load_model = False
+        self.load_model = True
         # 상태와 행동의 크기 정의
         self.state_size = (84, 84, 4) # 84, 84 화면이 4장
         # 마리오는 224, 256 -> resize 할것
         self.n_action = n_action
         # DQN 하이퍼파라미터
         self.epsilon = 1.
-        self.epsilon_start, self.epsilon_end = 1.0, 0.1
+        self.epsilon_start, self.epsilon_end = 0.8, 0.1
         self.exploration_steps = 1000
         # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
@@ -41,7 +42,7 @@ class DQNAgent:
         self.train_start = 5000
         self.update_target_rate = 1000
         self.discount_factor = 0.99
-        self.epoch = 3000
+        self.epoch = 500
         # 리플레이 메모리, 최대 크기 400000
         self.memory = deque(maxlen=10000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
@@ -63,7 +64,7 @@ class DQNAgent:
         self.sess.run(tf.global_variables_initializer())
 
         if self.load_model:
-            self.model.load_weights("./save_model/supermario_dqn2.h5")
+            self.model.load_weights("./save_model/", savefile_name)
 
         # supermario_dqn.h5 : action_size = 4
         # supermario_dqn2.h5 : action_size = 5 more jump, and when exploring do jump
@@ -232,13 +233,13 @@ if __name__ == "__main__":
             if action == 0:
                 real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
             elif action == 1:
-                real_action = [0, 0, 0, 0, 0, 1]  # B
+                real_action = [0, 0, 0, 0, 1, 0]  # A
             elif action == 2:
-                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+                real_action = [0, 0, 0, 1, 1, 0]  # Right + A
             elif action == 3:
                 real_action = [0, 0, 0, 1, 0, 0]  # Right
             else:
-                real_action = [0, 0, 0, 1, 1, 0]  # Right + A
+                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
 
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
@@ -289,4 +290,4 @@ if __name__ == "__main__":
 
         # 1000 에피소드마다 모델 저장
         if e % 1000 == 0:
-            agent.model.save_weights("./save_model/supermario_dqn2.h5")
+            agent.model.save_weights("./save_model/", savefile_name)
