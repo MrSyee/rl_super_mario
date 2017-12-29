@@ -18,7 +18,7 @@ class ProcessFrame84(gym.ObservationWrapper):
         return ProcessFrame84.process(obs)
 
     @staticmethod
-    def process(img):
+    def process(img): # [224, 256, 3]
         # img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
         x_t = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         x_t = cv2.resize(x_t, (84, 84), interpolation=cv2.INTER_AREA)

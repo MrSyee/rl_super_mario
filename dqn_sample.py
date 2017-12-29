@@ -59,7 +59,7 @@ class DQNAgent:
         self.summary_placeholders, self.update_ops, self.summary_op = \
             self.setup_summary()
         self.summary_writer = tf.summary.FileWriter(
-            'summary/breakout_dqn', self.sess.graph)
+            'summary/mario_dqn', self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
 
         if self.load_model:
