@@ -232,13 +232,13 @@ if __name__ == "__main__":
             if action == 0:
                 real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
             elif action == 1:
-                real_action = [0, 0, 0, 0, 1, 0]  # A
+                real_action = [0, 0, 0, 0, 0, 1]  # B
             elif action == 2:
-                real_action = [0, 0, 0, 1, 1, 0]  # Right + A
+                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
             elif action == 3:
                 real_action = [0, 0, 0, 1, 0, 0]  # Right
             else:
-                real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+                real_action = [0, 0, 0, 1, 1, 0]  # Right + A
 
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
