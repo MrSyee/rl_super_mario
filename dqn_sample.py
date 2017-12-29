@@ -2,8 +2,6 @@ from keras.layers.convolutional import Conv2D
 from keras.layers import Dense, Flatten
 from keras.optimizers import RMSprop
 from keras.models import Sequential
-from skimage.transform import resize
-from skimage.color import rgb2gray
 from collections import deque
 from keras import backend as K
 import tensorflow as tf
@@ -38,10 +36,11 @@ class DQNAgent:
         self.exploration_steps = 1000000. # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
                                   / self.exploration_steps
-        self.batch_size = 32
+        self.batch_size = 256
         self.train_start = 5000
         self.update_target_rate = 1000
         self.discount_factor = 0.99
+        self.epoch = 100
         # 리플레이 메모리, 최대 크기 400000
         self.memory = deque(maxlen=5000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
@@ -100,36 +99,37 @@ class DQNAgent:
 
     # 리플레이 메모리에서 무작위로 추출한 배치로 모델 학습
     def train_model(self):
-        if self.epsilon > self.epsilon_end:
-            self.epsilon -= self.epsilon_decay_step
+        for _ in range(self.epoch):
+            if self.epsilon > self.epsilon_end:
+                self.epsilon -= self.epsilon_decay_step
 
-        mini_batch = random.sample(self.memory, self.batch_size) # replay memory에서 batch_size만큼 뽑아옴
+            mini_batch = random.sample(self.memory, self.batch_size) # replay memory에서 batch_size만큼 뽑아옴
 
-        history = np.zeros((self.batch_size, self.state_size[0],      # [batch_size(32), 84, 84, 4]
-                            self.state_size[1], self.state_size[2]))
-        next_history = np.zeros((self.batch_size, self.state_size[0], # [batch_size(32), 84, 84, 4]
-                                 self.state_size[1], self.state_size[2]))
-        target = np.zeros((self.batch_size,))
-        action, reward, dead = [], [], []
+            history = np.zeros((self.batch_size, self.state_size[0],      # [batch_size(32), 84, 84, 4]
+                                self.state_size[1], self.state_size[2]))
+            next_history = np.zeros((self.batch_size, self.state_size[0], # [batch_size(32), 84, 84, 4]
+                                     self.state_size[1], self.state_size[2]))
+            target = np.zeros((self.batch_size,))
+            action, reward, dead = [], [], []
 
-        for i in range(self.batch_size):
-            history[i] = np.float32(mini_batch[i][0])
-            next_history[i] = np.float32(mini_batch[i][3])
-            action.append(mini_batch[i][1])
-            reward.append(mini_batch[i][2])
-            dead.append(mini_batch[i][4])
+            for i in range(self.batch_size):
+                history[i] = np.float32(mini_batch[i][0])
+                next_history[i] = np.float32(mini_batch[i][3])
+                action.append(mini_batch[i][1])
+                reward.append(mini_batch[i][2])
+                dead.append(mini_batch[i][4])
 
-        target_value = self.target_model.predict(next_history)
+            target_value = self.target_model.predict(next_history)
 
-        for i in range(self.batch_size):
-            if dead[i]:
-                target[i] = reward[i]
-            else:
-                target[i] = reward[i] + self.discount_factor * \
-                                        np.amax(target_value[i])
+            for i in range(self.batch_size):
+                if dead[i]:
+                    target[i] = reward[i]
+                else:
+                    target[i] = reward[i] + self.discount_factor * \
+                                            np.amax(target_value[i])
 
-        loss = self.optimizer([history, action, target])
-        self.avg_loss += loss[0]
+            loss = self.optimizer([history, action, target])
+            self.avg_loss += loss[0]
 
     # Huber Loss를 이용하기 위해 최적화 함수를 직접 정의
     def optimizer(self):
@@ -246,11 +246,7 @@ if __name__ == "__main__":
             reward = np.clip(reward, -1., 1.) # reward를 -1 ~ 1 사이의 값으로 만듬
             # 샘플 <s, a, r, s'>을 리플레이 메모리에 저장 후 학습
             agent.append_sample(history, action, reward, next_history, dead)
-            print ("global_step : " ,
-            global_step)
-
-            if len(agent.memory) >= agent.train_start:
-                agent.train_model()
+            # print ("global_step : " ,global_step)
 
             # 일정 시간마다 타겟모델을 모델의 가중치로 업데이트
             if global_step % agent.update_target_rate == 0:
@@ -260,6 +256,10 @@ if __name__ == "__main__":
             history = next_history
 
             if done:
+                # 학습
+                if len(agent.memory) >= agent.train_start:
+                    agent.train_model()
+
                 # 각 에피소드 당 학습 정보를 기록
                 if global_step > agent.train_start:
                     stats = [score, agent.avg_q_max / float(step), step,
