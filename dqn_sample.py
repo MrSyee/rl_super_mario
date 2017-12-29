@@ -16,7 +16,7 @@ import ppaquette_gym_super_mario
 from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
-EPISODES = 1000
+EPISODES = 2000
 savefile_name = "supermario_dqn2.h5"
 
 if not os.path.isdir('./save_model/'):
@@ -33,8 +33,8 @@ class DQNAgent:
         self.n_action = n_action
         # DQN 하이퍼파라미터
         self.epsilon = 1.
-        self.epsilon_start, self.epsilon_end = 0.8, 0.1
-        self.exploration_steps = 1000
+        self.epsilon_start, self.epsilon_end = 0.9, 0.1
+        self.exploration_steps = 1000000
         # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
                                   / self.exploration_steps
@@ -64,7 +64,7 @@ class DQNAgent:
         self.sess.run(tf.global_variables_initializer())
 
         if self.load_model:
-            self.model.load_weights("./save_model/", savefile_name)
+            self.model.load_weights("./save_model/%s" % savefile_name)
 
         # supermario_dqn.h5 : action_size = 4
         # supermario_dqn2.h5 : action_size = 5 more jump, and when exploring do jump
@@ -93,7 +93,7 @@ class DQNAgent:
     # select action
     def get_action(self, history):
         if np.random.rand() <= self.epsilon:
-            return random.randrange(self.n_action-3) # 탐험시 점프가 포함된 명령만 하도록 한다.
+            return random.randrange(self.n_action) # 탐험시 점프가 포함된 명령+ right
         else:
             q_value = self.model.predict(history)
             return np.argmax(q_value[0])
@@ -290,4 +290,4 @@ if __name__ == "__main__":
 
         # 1000 에피소드마다 모델 저장
         if e % 1000 == 0:
-            agent.model.save_weights("./save_model/", savefile_name)
+            agent.model.save_weights("./save_model/%s" % savefile_name)

@@ -36,50 +36,50 @@ class DQNAgent:
         self.model = self.build_model()
 
         if self.load_model:
-            self.model.load_weights("./save_model/", savefile_name)
+            self.model.load_weights("./save_model/%s" % savefile_name)
 
         # 상태가 입력, 큐함수가 출력인 인공신경망 생성
-        def build_model(self):
-            model = Sequential() # conv filter output size = (N-F/Stride) + 1
-            model.add(Conv2D(32, (8, 8), strides=(4, 4), activation='relu',   # 84x84 -> 20x20 (padding=valid(default) or same)
-                             input_shape=self.state_size))
-            model.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu'))  # 20x20 -> 9x9
-            model.add(Conv2D(64, (3, 3), strides=(1, 1), activation='relu'))  # 9x9 -> 7x7
-            model.add(Flatten())
-            model.add(Dense(512, activation='relu')) # 7x7x64= 3136 -> 512
-            model.add(Dense(self.n_action))       # 512 -> n_action
-            model.summary()
-            return model
+    def build_model(self):
+        model = Sequential() # conv filter output size = (N-F/Stride) + 1
+        model.add(Conv2D(32, (8, 8), strides=(4, 4), activation='relu',   # 84x84 -> 20x20 (padding=valid(default) or same)
+                         input_shape=self.state_size))
+        model.add(Conv2D(64, (4, 4), strides=(2, 2), activation='relu'))  # 20x20 -> 9x9
+        model.add(Conv2D(64, (3, 3), strides=(1, 1), activation='relu'))  # 9x9 -> 7x7
+        model.add(Flatten())
+        model.add(Dense(512, activation='relu')) # 7x7x64= 3136 -> 512
+        model.add(Dense(self.n_action))       # 512 -> n_action
+        model.summary()
+        return model
 
-        # 학습된 신경망을 불러옴
-        def load_model(self, filename):
-            self.model.load_weights(filename)
+    # 학습된 신경망을 불러옴
+    def load_model(self, filename):
+        self.model.load_weights(filename)
 
-        # select action
-        def get_action(self, history):
-            q_value = self.model.predict(history)
-            return np.argmax(q_value[0])
+    # select action
+    def get_action(self, history):
+        q_value = self.model.predict(history)
+        return np.argmax(q_value[0])
 
-        # 각 에피소드 당 학습 정보를 기록
-        def setup_summary(self):
-            episode_total_reward = tf.Variable(0.)
-            episode_avg_max_q = tf.Variable(0.)
-            episode_duration = tf.Variable(0.)
-            episode_avg_loss = tf.Variable(0.)
+    # 각 에피소드 당 학습 정보를 기록
+    def setup_summary(self):
+        episode_total_reward = tf.Variable(0.)
+        episode_avg_max_q = tf.Variable(0.)
+        episode_duration = tf.Variable(0.)
+        episode_avg_loss = tf.Variable(0.)
 
-            tf.summary.scalar('Total Reward/Episode', episode_total_reward)
-            tf.summary.scalar('Average Max Q/Episode', episode_avg_max_q)
-            tf.summary.scalar('Duration/Episode', episode_duration)
-            tf.summary.scalar('Average Loss/Episode', episode_avg_loss)
+        tf.summary.scalar('Total Reward/Episode', episode_total_reward)
+        tf.summary.scalar('Average Max Q/Episode', episode_avg_max_q)
+        tf.summary.scalar('Duration/Episode', episode_duration)
+        tf.summary.scalar('Average Loss/Episode', episode_avg_loss)
 
-            summary_vars = [episode_total_reward, episode_avg_max_q,
-                            episode_duration, episode_avg_loss]
-            summary_placeholders = [tf.placeholder(tf.float32) for _ in
-                                    range(len(summary_vars))]
-            update_ops = [summary_vars[i].assign(summary_placeholders[i]) for i in
-                          range(len(summary_vars))]
-            summary_op = tf.summary.merge_all()
-            return summary_placeholders, update_ops, summary_op
+        summary_vars = [episode_total_reward, episode_avg_max_q,
+                        episode_duration, episode_avg_loss]
+        summary_placeholders = [tf.placeholder(tf.float32) for _ in
+                                range(len(summary_vars))]
+        update_ops = [summary_vars[i].assign(summary_placeholders[i]) for i in
+                      range(len(summary_vars))]
+        summary_op = tf.summary.merge_all()
+        return summary_placeholders, update_ops, summary_op
 
 if __name__ == "__main__":
     # 환경과 DQN 에이전트 생성
@@ -90,8 +90,6 @@ if __name__ == "__main__":
     env = ProcessFrame84(env)
 
     agent = DQNAgent(n_action=5)
-    agent.load_model("./save_model/",savefile_name)
-
     scores, episodes, global_step = [], [], 0
 
     for e in range(EPISODES):
