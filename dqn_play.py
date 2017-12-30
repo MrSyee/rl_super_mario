@@ -18,7 +18,7 @@ from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
 EPISODES = 1000000
-savefile_name = "supermario_dqn2.h5"
+savefile_name = "supermario_dqn_v_0_4.h5"
 
 if not os.path.isdir('./save_model/'):
     os.mkdir("./save_model/")
