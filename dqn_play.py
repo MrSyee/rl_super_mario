@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
             score += reward
             history = next_history
-            print ("step : ", step, " score : ", score, " action : ", action_name)
+            print ("step : ", step, " score : ", score, " action :", action, " real_action : ", action_name)
 
             if done:
                 print("episode:", e, "  score:", score)

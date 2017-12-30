@@ -16,8 +16,9 @@ import ppaquette_gym_super_mario
 from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
-EPISODES = 4000
-savefile_name = "supermario_dqn2.h5"
+EPISODES = 2000
+savefile_name = "supermario_dqn_v_0_4.h5"
+summary_name = 'summary/mario_dqn_v_0_4'
 
 if not os.path.isdir('./save_model/'):
     os.mkdir("./save_model/")
@@ -38,11 +39,11 @@ class DQNAgent:
         # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
                                   / self.exploration_steps
-        self.batch_size = 256
+        self.batch_size = 32
         self.train_start = 5000
         self.update_target_rate = 1000
         self.discount_factor = 0.99
-        self.epoch = 500
+        self.epoch = 1
         # 리플레이 메모리, 최대 크기 400000
         self.memory = deque(maxlen=10000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
@@ -60,7 +61,7 @@ class DQNAgent:
         self.summary_placeholders, self.update_ops, self.summary_op = \
             self.setup_summary()
         self.summary_writer = tf.summary.FileWriter(
-            'summary/mario_dqn', self.sess.graph)
+            summary_name, self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
 
         if self.load_model:
@@ -264,11 +265,11 @@ if __name__ == "__main__":
             score += reward
             history = next_history
 
-            if done:
-                # 학습
-                if len(agent.memory) >= agent.train_start:
-                    agent.train_model()
+            # 학습
+            if len(agent.memory) >= agent.train_start:
+                agent.train_model()
 
+            if done:
                 # 각 에피소드 당 학습 정보를 기록
                 if global_step > agent.train_start:
                     stats = [score, agent.avg_q_max / float(step), step,
