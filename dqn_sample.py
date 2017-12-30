@@ -27,14 +27,14 @@ if not os.path.isdir('./save_model/'):
 class DQNAgent:
     def __init__(self, n_action=5):
         self.render = False
-        self.load_model = True
+        self.load_model = False
         # 상태와 행동의 크기 정의
         self.state_size = (84, 84, 4) # 84, 84 화면이 4장
         # 마리오는 224, 256 -> resize 할것
         self.n_action = n_action
         # DQN 하이퍼파라미터
         self.epsilon = 1.
-        self.epsilon_start, self.epsilon_end = 0.9, 0.1
+        self.epsilon_start, self.epsilon_end = 1.0, 0.1
         self.exploration_steps = 1000000
         # 탐험을 얼마나 할것인가. epsilon 크기가 계속 줄어든다
         self.epsilon_decay_step = (self.epsilon_start - self.epsilon_end) \
@@ -233,18 +233,6 @@ if __name__ == "__main__":
             # 바로 전 4개의 상태로 행동을 선택
             action = agent.get_action(history)
 
-            # 같은 곳에 계속 막혀있을경우 강제로 점프시킨다.
-            if step==1:
-                reward = 0
-            prev_reward = reward
-
-            if reward==prev_reward:
-                reward_count += 1
-            else:
-                reward_count = 0
-
-            if reward_count > 10:
-                action = 2
 
             # action
             if action == 0:
@@ -254,12 +242,13 @@ if __name__ == "__main__":
             elif action == 2:
                 real_action = [0, 0, 0, 1, 1, 0]  # Right + A
             elif action == 3:
-                real_action = [0, 0, 0, 1, 0, 0]  # Right
-            else:
                 real_action = [0, 0, 0, 1, 0, 1]  # Right + B
+            elif action == 4:
+                real_action = [0, 0, 0, 0, 1, 1]  # A + B
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
+
             # 각 타임스텝마다 상태 전처리
             # next_state = pre_processing(next_observe)
             next_state = np.reshape([next_observe], (1, 84, 84, 1))
@@ -269,6 +258,7 @@ if __name__ == "__main__":
                 agent.model.predict(np.float32(history))[0])
 
             reward = np.clip(reward, -1., 1.) # reward를 -1 ~ 1 사이의 값으로 만듬
+
             # 샘플 <s, a, r, s'>을 리플레이 메모리에 저장 후 학습
             agent.append_sample(history, action, reward, next_history, dead)
             # print ("global_step : " ,global_step)
