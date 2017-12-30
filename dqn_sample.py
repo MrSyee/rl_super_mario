@@ -45,7 +45,7 @@ class DQNAgent:
         self.discount_factor = 0.99
         self.epoch = 1
         # 리플레이 메모리, 최대 크기 400000
-        self.memory = deque(maxlen=10000)
+        self.memory = deque(maxlen=40000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
         self.model = self.build_model()
         self.target_model = self.build_model()
@@ -207,6 +207,8 @@ if __name__ == "__main__":
         history = np.stack((observe, observe, observe, observe), axis=2) # 맨처음엔 같은 화면 4개를 history로
         history = np.reshape([history], (1, 84, 84, 4))
 
+        reward_count = 0 # 계속 같은 곳에 머물 경우를 체크
+
         while not done:
             if agent.render:
                 env.render()
@@ -230,7 +232,21 @@ if __name__ == "__main__":
             '''
             # 바로 전 4개의 상태로 행동을 선택
             action = agent.get_action(history)
-            #
+
+            # 같은 곳에 계속 막혀있을경우 강제로 점프시킨다.
+            if step==1:
+                reward = 0
+            prev_reward = reward
+
+            if reward==prev_reward:
+                reward_count += 1
+            else:
+                reward_count = 0
+
+            if reward_count > 10:
+                action = 2
+
+            # action
             if action == 0:
                 real_action = [0, 0, 0, 1, 1, 1]  # Right + A + B
             elif action == 1:
@@ -241,7 +257,6 @@ if __name__ == "__main__":
                 real_action = [0, 0, 0, 1, 0, 0]  # Right
             else:
                 real_action = [0, 0, 0, 1, 0, 1]  # Right + B
-
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
