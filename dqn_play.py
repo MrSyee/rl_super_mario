@@ -57,8 +57,11 @@ class DQNAgent:
 
     # select action
     def get_action(self, history):
-        q_value = self.model.predict(history)
-        return np.argmax(q_value[0])
+        if np.random.rand() <= 0.3:
+            return random.randrange(self.n_action) # 탐험시 점프가 포함된 명령+ right
+        else:
+            q_value = self.model.predict(history)
+            return np.argmax(q_value[0])
 
     # 각 에피소드 당 학습 정보를 기록
     def setup_summary(self):
