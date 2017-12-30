@@ -16,7 +16,7 @@ import ppaquette_gym_super_mario
 from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
-EPISODES = 2000
+EPISODES = 4000
 savefile_name = "supermario_dqn2.h5"
 
 if not os.path.isdir('./save_model/'):
