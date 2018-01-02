@@ -12,4 +12,4 @@ Reference
 ---------
 #### Keras-Reinforced Learning : https://github.com/rlcode/reinforcement-learning-kr
 #### KAKAO : https://brunch.co.kr/@kakao-it/144
-             https://github.com/chris-chris/mario-rl-tutorial
+####         https://github.com/chris-chris/mario-rl-tutorial
