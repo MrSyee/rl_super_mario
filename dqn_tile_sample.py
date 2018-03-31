@@ -44,7 +44,7 @@ class DQNAgent:
         self.train_start = 5000
         self.update_target_rate = 1000
         self.discount_factor = 0.99
-        self.epoch = 1
+        self.epoch = 50
         # 리플레이 메모리, 최대 크기 400000
         self.memory = deque(maxlen=40000)
         # 모델과 타겟모델을 생성하고 타겟모델 초기화
@@ -116,7 +116,7 @@ class DQNAgent:
     # 리플레이 메모리에서 무작위로 추출한 배치로 모델 학습
     def train_model(self):
         #self.epoch = int(len(self.memory) / self.batch_size)
-        #print (self.epoch)
+        print ("model train")
 
         for _ in range(self.epoch):
             if self.epsilon > self.epsilon_end:
@@ -303,13 +303,14 @@ if __name__ == "__main__":
                 agent.update_target_model()
 
             history = next_history
-
+            '''
             # 학습
             if len(agent.memory) > agent.train_start:
                 agent.train_model()
+            '''
 
             if done:
-                # 각 에피소드 당 학습 정보를 기록
+                # 각 에피소드 당 학습 정보를 기록s
                 train_msg = ""
                 target_action_msg = ""
                 if len(agent.memory) > agent.train_start and e % 1 == 0:
@@ -339,6 +340,6 @@ if __name__ == "__main__":
                 agent.avg_q_max, agent.avg_loss = 0, 0
 
         # 50 에피소드마다 모델 저장
-        if e % 30 == 0 and e != 0:
+        if e % 5 == 0 and e != 0:
             agent.model.save_weights("./save_model/%s" % savefile_name)
             print ("save model %d step" % e)

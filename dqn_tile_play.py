@@ -19,7 +19,7 @@ from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
 EPISODES = 1
-savefile_name = "supermario_dqn_v_tile_1_1.h5"
+savefile_name = "supermario_dqn_v_tile_1_2.h5"
 
 if not os.path.isdir('./save_model/'):
     os.mkdir("./save_model/")
@@ -156,12 +156,14 @@ if __name__ == "__main__":
             elif action == 6:
                 real_action = [0, 1, 0, 0, 0, 0]  # Left
                 action_name = "Left"
+            '''
             elif action == 7:
                 real_action = [0, 0, 0, 0, 0, 0]  # NOOP
                 action_name = "NOOP"
             elif action == 8:
                 real_action = [0, 1, 0, 0, 1, 1]  # Left + A + B
                 action_name = "Left + A + B"
+            '''
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
