@@ -12,13 +12,14 @@ import h5py
 import gym
 # import gym_pull
 import ppaquette_gym_super_mario
+import time
 
 from wrappers import MarioActionSpaceWrapper
 from wrappers import ProcessFrame84
 
 EPISODES = 3000
-savefile_name = "supermario_dqn_v_tile_1_1.h5"
-summary_name = 'summary/mario_dqn_v_tile_1_1'
+savefile_name = "supermario_dqn_v_tile_1_2.h5"
+summary_name = 'summary/mario_dqn_v_tile_1_2'
 
 if not os.path.isdir('./save_model/'):
     os.mkdir("./save_model/")
@@ -66,6 +67,7 @@ class DQNAgent:
 
         if self.load_model:
             self.model.load_weights("./save_model/%s" % savefile_name)
+            print ("\n------------------load model : %s------------------\n" % savefile_name)
 
         # supermario_dqn.h5 : action_size = 4
         # supermario_dqn2.h5 : action_size = 5 more jump, and when exploring do jump
@@ -96,8 +98,12 @@ class DQNAgent:
         self.target_model.set_weights(self.model.get_weights())
 
     # select action
-    def get_action(self, history):
-        if np.random.rand() <= self.epsilon:
+    def get_action(self, history, episode):
+        epsilon = self.epsilon
+        if episode % 5 == 0 and episode >= 50:
+            epsilon = 0
+
+        if np.random.rand() <= epsilon:
             return random.randrange(self.n_action) # 탐험시 점프가 포함된 명령+ right
         else:
             q_value = self.model.predict(history)
@@ -109,6 +115,9 @@ class DQNAgent:
 
     # 리플레이 메모리에서 무작위로 추출한 배치로 모델 학습
     def train_model(self):
+        #self.epoch = int(len(self.memory) / self.batch_size)
+        #print (self.epoch)
+
         for _ in range(self.epoch):
             if self.epsilon > self.epsilon_end:
                 self.epsilon -= self.epsilon_decay_step
@@ -120,25 +129,26 @@ class DQNAgent:
             next_history = np.zeros((self.batch_size, self.state_size[0], # [batch_size(32), 84, 84, 4]
                                      self.state_size[1], self.state_size[2]))
             target = np.zeros((self.batch_size,))
-            action, reward, dead = [], [], []
+            action, reward, done = [], [], []
 
             for i in range(self.batch_size):
                 history[i] = np.float32(mini_batch[i][0])
                 next_history[i] = np.float32(mini_batch[i][3])
                 action.append(mini_batch[i][1])
                 reward.append(mini_batch[i][2])
-                dead.append(mini_batch[i][4])
+                done.append(mini_batch[i][4])
 
             target_value = self.target_model.predict(next_history)
 
             for i in range(self.batch_size):
-                if dead[i]:
+                if done[i]:
                     target[i] = reward[i]
                 else:
                     target[i] = reward[i] + self.discount_factor * \
                                             np.amax(target_value[i])
 
             loss = self.optimizer([history, action, target])
+
             self.avg_loss += loss[0]
 
     # Huber Loss를 이용하기 위해 최적화 함수를 직접 정의
@@ -193,7 +203,7 @@ if __name__ == "__main__":
     # Apply observation space wrapper to reduce input size [224, 256, 3] -> [84, 84, 1]
     # env = ProcessFrame84(env)
 
-    n_action = 9
+    n_action = 7
     agent = DQNAgent(n_action=n_action)
 
     scores, episodes, global_step = [], [], 0
@@ -237,8 +247,7 @@ if __name__ == "__main__":
                 13: [0, 0, 0, 0, 1, 1]  # A + B
             '''
             # 바로 전 4개의 상태로 행동을 선택
-            action = agent.get_action(history)
-
+            action = agent.get_action(history, e)
 
             # action
             if action == 0:
@@ -255,15 +264,27 @@ if __name__ == "__main__":
             elif action == 5:
                 real_action = [0, 1, 0, 0, 1, 0]  # Left + A
             elif action == 6:
-                real_action = [0, 1, 0, 0, 1, 1]  # Left + A + B
+                real_action = [0, 1, 0, 0, 0, 0]  # Left
+            '''
             elif action == 7:
                 real_action = [0, 0, 0, 0, 0, 0]  # NOOP
             elif action == 8:
-                real_action = [0, 1, 0, 0, 0, 0]  # Left
+                real_action = [0, 1, 0, 0, 1, 1]  # Left + A + B
+            '''
 
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
+            #reward = np.clip(reward, -1., 1.)  # reward를 -1 ~ 1 사이의 값으로 만듬
+            score = info['distance']
+
+            if (info['time'] == 150):
+                info['life'] = 0
+                done = True
+
+            if (info['life']==0):
+                dead = True
+                reward = -10
 
             # 각 타임스텝마다 상태 전처리
             # next_state = pre_processing(next_observe)
@@ -273,26 +294,30 @@ if __name__ == "__main__":
             agent.avg_q_max += np.amax(
                 agent.model.predict(np.float32(history))[0])
 
-            reward = np.clip(reward, -1., 1.) # reward를 -1 ~ 1 사이의 값으로 만듬
-
             # 샘플 <s, a, r, s'>을 리플레이 메모리에 저장 후 학습
-            agent.append_sample(history, action, reward, next_history, dead)
+            agent.append_sample(history, action, reward, next_history, done)
             # print ("global_step : " ,global_step)
 
             # 일정 시간마다 타겟모델을 모델의 가중치로 업데이트
             if global_step % agent.update_target_rate == 0:
                 agent.update_target_model()
 
-            score += reward
             history = next_history
 
             # 학습
-            if len(agent.memory) >= agent.train_start:
+            if len(agent.memory) > agent.train_start:
                 agent.train_model()
 
             if done:
                 # 각 에피소드 당 학습 정보를 기록
-                if global_step > agent.train_start:
+                train_msg = ""
+                target_action_msg = ""
+                if len(agent.memory) > agent.train_start and e % 1 == 0:
+                    # 학습
+                    agent.train_model()
+
+                    train_msg = "####### train model ##"
+
                     stats = [score, agent.avg_q_max / float(step), step,
                              agent.avg_loss / float(step)]
                     for i in range(len(stats)):
@@ -302,15 +327,18 @@ if __name__ == "__main__":
                     summary_str = agent.sess.run(agent.summary_op)
                     agent.summary_writer.add_summary(summary_str, e + 1)
 
+                if e % 5 == 0 and e >= 50:
+                    target_action_msg = "@@@@@ action by target model@@"
+
                 print("episode:", e, "  reward:", score, "  memory length:",
                       len(agent.memory), "  epsilon:", agent.epsilon,
                       "  global_step:", global_step, "  average_q:",
                       agent.avg_q_max / float(step), "  average loss:",
-                      agent.avg_loss / float(step))
+                      agent.avg_loss / float(step), train_msg, target_action_msg)
 
                 agent.avg_q_max, agent.avg_loss = 0, 0
 
-        # 1000 에피소드마다 모델 저장
-        if e % 50 == 0:
+        # 50 에피소드마다 모델 저장
+        if e % 30 == 0 and e != 0:
             agent.model.save_weights("./save_model/%s" % savefile_name)
             print ("save model %d step" % e)

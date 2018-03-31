@@ -154,14 +154,14 @@ if __name__ == "__main__":
                 real_action = [0, 1, 0, 0, 1, 0]  # Left + A
                 action_name = "Left + A"
             elif action == 6:
-                real_action = [0, 1, 0, 0, 1, 1]  # Left + A + B
-                action_name = "Left + A + B"
+                real_action = [0, 1, 0, 0, 0, 0]  # Left
+                action_name = "Left"
             elif action == 7:
                 real_action = [0, 0, 0, 0, 0, 0]  # NOOP
                 action_name = "NOOP"
             elif action == 8:
-                real_action = [0, 1, 0, 0, 0, 0]  # Left
-                action_name = "Left"
+                real_action = [0, 1, 0, 0, 1, 1]  # Left + A + B
+                action_name = "Left + A + B"
 
             # 선택한 행동으로 환경에서 한 타임스텝 진행
             next_observe, reward, done, info = env.step(real_action)
@@ -172,7 +172,7 @@ if __name__ == "__main__":
             next_state = np.reshape([next_observe], (1, 13, 16, 1))
             next_history = np.append(next_state, history[:, :, :, :3], axis=3)
 
-            score += reward
+            score = info['distance']
             history = next_history
             print ("step : ", step, " score : ", score, " action :", action, " real_action : ", action_name)
 
